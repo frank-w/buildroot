@@ -1,4 +1,5 @@
 # buildroot (initramfs) for Bananapi-R2/R64
+![CI](https://github.com/frank-w/buildroot/workflows/CI/badge.svg?branch=ci-test)
 
 for r2 change this in configs/BPI-R64_defconfig
 
