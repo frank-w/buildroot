@@ -7,6 +7,8 @@ BR2_cortex_a53=y
 
 BR2_TARGET_ROOTFS_CPIO=y
 BR2_TARGET_ROOTFS_CPIO_GZIP=y
+#use serial console by default
+BR2_TARGET_GENERIC_GETTY_PORT=ttyS0
 
 BR2_KERNEL_HEADERS_5_4=y #(for iproute2)
 BR2_TOOLCHAIN_BUILDROOT_WCHAR=y #(for nano)
