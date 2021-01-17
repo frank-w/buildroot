@@ -25,6 +25,15 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
+      - name: Setup cache
+        id: cache
+        uses: actions/cache@v2
+        with:
+          path: ~/.buildroot-ccache
+          key: ${{ runner.os }}-ccache
+          restore-keys: |
+            ${{ runner.os }}-ccache
+
       # Runs a set of commands using the runners shell
       - name: Run a multi-line script
         run: |
