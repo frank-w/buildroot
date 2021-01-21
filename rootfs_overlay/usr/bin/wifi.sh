@@ -75,7 +75,7 @@ else
 #	echo "set MAC"
 #	ip link set ap0 address 01:02:03:04:05:06 up
 	echo "Done, all good, ready to lauch hostapd"
-	hostapd -dd /etc/hostapd/hostapd_ap0.conf > /var/log/hostapd_ap0.log &
+	hostapd -dd /etc/hostapd_ap0.conf > /var/log/hostapd_ap0.log &
 	echo "set IP"
 	ip addr add 192.168.10.1/24 dev ap0
 	echo "please restart dnsmasq..."
