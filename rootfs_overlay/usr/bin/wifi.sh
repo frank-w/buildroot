@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 ### BEGIN INIT INFO
 # Provides:       wifi
 # Required-Start: $network $remote_fs $syslog
@@ -19,7 +19,7 @@ DESC="Load MediaTek MT6625L firmware wifi & BT"
 #disable kernel-messages
 echo 4 > /proc/sys/kernel/printk
 #disable printing messages to console
-dmesg -D
+dmesg -n 1 #"dmesg -D" does not exist on buildroot
 
 if [[ ! -e /dev/wmtWifi ]];
 then
@@ -53,7 +53,7 @@ then
 		echo "hostapd running...kill it";
 		killall hostapd
 	fi
-	if [[ -n $(ip a|grep ap0) ]];
+	if [[ ! -z $(ip a|grep ap0) ]]; # -n does not work on buildroot
 	then
 		echo "ap0 exists, reset it";
 		echo 0 >/dev/wmtWifi
@@ -78,8 +78,8 @@ else
 	hostapd -dd /etc/hostapd/hostapd_ap0.conf > /var/log/hostapd_ap0.log &
 	echo "set IP"
 	ip addr add 192.168.10.1/24 dev ap0
-	echo "restart dnsmasq..."
-	service dnsmasq restart
+	echo "please restart dnsmasq..."
+	#service dnsmasq restart
 
 	#limit speed as suggested in http://wiki.banana-pi.org/Getting_Started_with_R2#WiFi_and_Ap_mode_on_R2_Openwrt
 	#tc qdisc add dev ap0 root handle 1: htb default 11
