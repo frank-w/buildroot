@@ -53,6 +53,9 @@ jobs:
           sed -i 's/#\(board=bpi-r64\)/\1/' build.conf #change board to r64
           ./build.sh importconfig
           ./build.sh build
+          sed -i 's/#\(board=bpi-r2pro\)/\1/' build.conf #change board to r2pro
+          ./build.sh importconfig
+          ./build.sh build
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
@@ -64,5 +67,5 @@ jobs:
           file: rootfs*.cpio.gz
           tag:  "CI-BUILD-${{ env.BRANCH }}-${{ env.VER }}-${{ env.DT }}"
           overwrite: true
-          body: "release for bpi-r2 + bpi-r64"
+          body: "release for bpi-r2 + bpi-r64 + r2pro"
           file_glob: true
