@@ -18,7 +18,9 @@ case $1 in
 	;;
 	"importconfig")
 		echo "import config for $board..."
-		if [[ "$board" == "bpi-r64" ]];then
+		if [[ "$board" == "bpi-r2pro" ]];then
+			make BPI-R2P_defconfig
+		elif [[ "$board" == "bpi-r64" ]];then
 			make BPI-R64_defconfig
 		else
 			make BPI-R2_defconfig
