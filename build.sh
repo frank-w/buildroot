@@ -26,6 +26,10 @@ case $1 in
 			make BPI-R2_defconfig
 		fi
 	;;
+	"config")
+		echo "run menuconfig..."
+		make menuconfig
+	;;
 	""|"build")
 		echo "building for $board..."
 		make -s
