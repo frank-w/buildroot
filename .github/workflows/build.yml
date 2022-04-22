@@ -49,14 +49,14 @@ jobs:
           ./build.sh importconfig
           ./build.sh build
 
-      - name: build for r64
+      - name: build for bpi-r64
         run: |
           ./build.sh clean
           sed -i 's/#\(board=bpi-r64\)/\1/' build.conf #change board to r64
           ./build.sh importconfig
           ./build.sh build
 
-      - name: build for r2pro
+      - name: build for bpi-r2pro
         run: |
           ./build.sh clean
           sed -i 's/#\(board=bpi-r2pro\)/\1/' build.conf #change board to r2pro
