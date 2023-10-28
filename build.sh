@@ -49,7 +49,10 @@ case $1 in
 	;;
 	""|"build")
 		echo "building for $board..."
-		make -s -j8
+		exec 3> >(tee build.log)
+		make -s -j8 2>&3
+		ret=$?
+		exec 3>&-
 		mv output/images/rootfs.cpio.zst rootfs_${board}.cpio.zst
 	;;
 	"copy64config")
