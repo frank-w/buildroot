@@ -19,11 +19,15 @@ case $board in
 	"bpi-r2pro")
 		DEFCONFIG=BPI-R2P_defconfig
 	;;
-	"bpi-r3")
+	"bpi-r3"|"bpi-r4")
 		DEFCONFIG=BPI-R3_defconfig
 	;;
 	"bpi-r64")
 		DEFCONFIG=BPI-R64_defconfig
+	;;
+	*)
+		echo "unsupported board"
+		exit 1
 	;;
 esac
 
