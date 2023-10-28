@@ -53,7 +53,7 @@ case $1 in
 		make -s -j8 2>&3
 		ret=$?
 		exec 3>&-
-		mv output/images/rootfs.cpio.zst rootfs_${board}.cpio.zst
+		(set -x;mv output/images/rootfs.cpio.zst rootfs_${board}.cpio.zst)
 	;;
 	"copy64config")
 		grep -v 'BR2_aarch64\|BR2_arm\|BR2_cortex' configs/BPI-R64_defconfig > configs/BPI-R2_defconfig
