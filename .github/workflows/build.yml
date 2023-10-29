@@ -36,14 +36,25 @@ jobs:
         run: |
           echo $BRANCH $VER $DT
 
-      - name: Setup cache
-        id: cache
-        uses: actions/cache@v2
-        with:
-          path: ~/.buildroot-ccache
-          key: ${{ runner.os }}-ccache-buildroot
-          restore-keys: |
-            ${{ runner.os }}-ccache-buildroot
+      - name: cleanup
+        run: |
+          df -h
+          du -h --max-depth=2
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /usr/local/share/boost
+          ls -lah "$AGENT_TOOLSDIRECTORY"
+          #sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          df -h
+
+#      - name: Setup cache
+#        id: cache
+#        uses: actions/cache@v2
+#        with:
+#          path: ~/.buildroot-ccache
+#          key: ${{ runner.os }}-ccache-buildroot
+#          restore-keys: |
+#            ${{ runner.os }}-ccache-buildroot
 
       - name: build for bpi-r2
         run: |
