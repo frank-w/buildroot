@@ -16,7 +16,7 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "build"
-  build:
+  build_arm:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -30,55 +30,14 @@ jobs:
       - name: Setup env
         run: |
           echo "DT=$(date +'%Y-%m-%d_%H%M')" >> $GITHUB_ENV
-          echo "VER=$(git describe)" >> $GITHUB_ENV
+          echo "VER=$(git describe)_arm" >> $GITHUB_ENV
           echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
       - name: Print env
         run: |
           echo $BRANCH $VER $DT
 
-      - name: cleanup
-        run: |
-          df -h
-          du -h --max-depth=2
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /usr/local/share/boost
-          ls -lah "$AGENT_TOOLSDIRECTORY"
-          #sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          df -h
-
-#      - name: Setup cache
-#        id: cache
-#        uses: actions/cache@v2
-#        with:
-#          path: ~/.buildroot-ccache
-#          key: ${{ runner.os }}-ccache-buildroot
-#          restore-keys: |
-#            ${{ runner.os }}-ccache-buildroot
-
       - name: build for bpi-r2
         run: |
-          ./build.sh importconfig
-          ./build.sh build
-
-#      - name: build for bpi-r64
-#        run: |
-#          ./build.sh clean
-#          sed -i 's/#\(board=bpi-r64\)/\1/' build.conf #change board to r64
-#          ./build.sh importconfig
-#          ./build.sh build
-
-#      - name: build for bpi-r2pro
-#        run: |
-#          ./build.sh clean
-#          sed -i 's/#\(board=bpi-r2pro\)/\1/' build.conf #change board to r2pro
-#          ./build.sh importconfig
-#          ./build.sh build
-
-      - name: build for bpi-r3
-        run: |
-          ./build.sh clean
-          sed -i 's/#\(board=bpi-r3\)/\1/' build.conf #change board to r3
           ./build.sh importconfig
           ./build.sh build
 
@@ -92,5 +51,45 @@ jobs:
           file: rootfs*.cpio.*
           tag:  "CI-BUILD-${{ env.BRANCH }}-${{ env.VER }}-${{ env.DT }}"
           overwrite: true
-          body: "release for bpi-r2 + bpi-r64 + r2pro + r3"
+          body: "release for bpi-r2"
+          file_glob: true
+
+  build_arm64:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 10
+
+      - name: Setup env
+        run: |
+          echo "DT=$(date +'%Y-%m-%d_%H%M')" >> $GITHUB_ENV
+          echo "VER=$(git describe)_arm64" >> $GITHUB_ENV
+          echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
+      - name: Print env
+        run: |
+          echo $BRANCH $VER $DT
+
+      - name: build for bpi-r3
+        run: |
+          ./build.sh clean
+          echo 'board=bpi-r3' > build.conf #change board to r3
+          ./build.sh importconfig
+          ./build.sh build
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          #repo_name: frank-w/buildroot
+          # A personal access token for the GitHub repository in which the release will be created and edited.
+          # It is recommended to create the access token with the following scopes: `repo, user, admin:repo_hook`.
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: rootfs*.cpio.*
+          tag:  "CI-BUILD-${{ env.BRANCH }}-${{ env.VER }}-${{ env.DT }}"
+          overwrite: true
+          body: "release for bpi-r64 + r2pro + r3"
           file_glob: true
