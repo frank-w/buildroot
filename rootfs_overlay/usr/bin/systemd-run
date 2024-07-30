@@ -1,0 +1,8 @@
+#!/bin/sh
+logfile=/tmp/error.log
+echo $@ > $logfile
+#prg=$1
+shift 5
+(
+	$@ < /dev/zero >> $logfile 2>&1
+)&
