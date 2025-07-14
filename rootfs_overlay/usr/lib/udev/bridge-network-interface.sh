@@ -19,7 +19,7 @@ BRIDGE_HOTPLUG=no
 
 [ "$BRIDGE_HOTPLUG" = "no" ] && exit 0
 
-. /lib/bridge-utils/bridge-utils.sh
+. /usr/lib/bridge-utils/bridge-utils.sh
 
 if [ -d /run/network ]; then
    for i in $(ifquery --list --allow auto); do
@@ -30,6 +30,10 @@ if [ -d /run/network ]; then
 				create_vlan_port
 				if [ -d /sys/class/net/$port ]; then
 					ifup --allow auto $i
+					if [ -e /proc/sys/net/ipv6/conf/$port ]; then ip link set $port addrgenmode none;fi
+					if [ "$(ifquery "$i"|sed -n -e's/^bridge[_-]hw: //p')" = "$port" ]; then
+						ip link set dev "$i" address "$(ip link show dev "$port" 2>/dev/null|sed -n "s|.*link/ether \([^ ]*\) brd.*|\1|p")"
+					fi
 					brctl addif $i $port && ip link set dev $port up
 				fi
 				break

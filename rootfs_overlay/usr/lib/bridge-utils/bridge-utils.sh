@@ -8,7 +8,7 @@ bridge_parse_ports()
     case $1 in
       all)
 	shift &&
-	set regex eth.\* em.\* 'p[0-9].*' noregex "$@"
+	set regex eth.\* em.\* en.\* 'p[0-9].*' noregex "$@"
 	;;
     esac
 
@@ -64,12 +64,12 @@ then
   # port is a vlan and the device exists?
   if [ "$port" != "$dev" ] && [ -e "/sys/class/net/$dev" ]
   then
-    if [ -f /proc/sys/net/ipv6/conf/$dev/disable_ipv6 ]
+    if [ "$BRIDGE_DISABLE_LINKLOCAL_IPV6_ALSO_PHYS" != "no" ] && [ -e "/proc/sys/net/ipv6/conf/$dev" ]
     then
-      echo 1 > /proc/sys/net/ipv6/conf/$dev/disable_ipv6
+      ip link set $dev addrgenmode none
     fi
     ip link set "$dev" up
-    ip link add link "$dev" name "$port" type vlan id "${port#*.}"
+    ip link add link "$dev" name "$port" type vlan id "$(echo $port|sed 's/[^.]*\.0*//g')"
   fi
 fi
 }

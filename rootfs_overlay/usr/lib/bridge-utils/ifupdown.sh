@@ -6,12 +6,15 @@
 # Have a look at /usr/share/doc/bridge-utils/README.Debian if you want
 # more info about the way on wich a bridge is set up on Debian.
 
-if [ ! -x /sbin/brctl ]
+if [ ! -x /usr/sbin/brctl ]
 then
   exit 0
 fi
 
-. /lib/bridge-utils/bridge-utils.sh
+#default configuration
+[ -f /etc/default/bridge-utils ] && . /etc/default/bridge-utils
+
+. /usr/lib/bridge-utils/bridge-utils.sh
 
 case "$IF_BRIDGE_PORTS" in
     "")
@@ -25,12 +28,24 @@ case "$IF_BRIDGE_PORTS" in
 	;;
 esac
 
+# Overload bridge_hw, now it can be a device as well as an address
+# The device can exist or not, then it is emptied
+if [ "$IF_BRIDGE_HW" ] && ! echo "$IF_BRIDGE_HW"|grep -q "..:..:..:..:..:.."; then
+  IF_BRIDGE_HW="$(ip link show dev "$IF_BRIDGE_HW" 2>/dev/null|sed -n "s|.*link/ether \([^ ]*\) brd.*|\1|p")"
+fi
 # Previous work (create the interface)
 if [ "$MODE" = "start" ] && [ ! -d /sys/class/net/$IFACE ]; then
   brctl addbr $IFACE || exit 1
   if [ "$IF_BRIDGE_HW" ]; then
+    sleep 1
     ip link set dev $IFACE address $IF_BRIDGE_HW
   fi
+# Activate VLAN filtering on VLAN aware bridges                                
+  if [ "$IF_BRIDGE_VLAN_AWARE" = "yes" ]; then                                 
+    ip link set dev $IFACE type bridge vlan_filtering 1                        
+  else                                                                         
+    ip link set dev $IFACE type bridge vlan_filtering 0                        
+  fi                                                                           
 # Wait for the ports to become available
   if [ "$IF_BRIDGE_WAITPORT" ]
   then
@@ -55,7 +70,11 @@ if [ "$MODE" = "start" ] && [ ! -d /sys/class/net/$IFACE ]; then
   fi
 # Previous work (stop the interface)
 elif [ "$MODE" = "stop" ];  then
+  if [ "$PHASE" = "pre-down" ]; then
+    [ ! -d /sys/class/net/$IFACE ] && brctl addbr $IFACE && ip address add "$IF_ADDRESS"/"$IF_NETMASK" dev $IFACE
+  elif [ "$PHASE" = "post-down" ]; then
   ip link set dev $IFACE down || exit 1
+  fi
 fi
 
 all_interfaces= &&
@@ -67,33 +86,32 @@ do
     # We attach and configure each port of the bridge
     if [ "$MODE" = "start" ] && [ ! -d /sys/class/net/$IFACE/brif/$port ]; then
       create_vlan_port
-      if [ "$IF_BRIDGE_HW" ]
+      if [ -e "/sys/class/net/$port" ]
       then
-        KVER="$(uname -r)"
-        LKVER="${KVER#*.}"
-        LKVER="${LKVER%%-*}"
-        LKVER="${LKVER%%.*}"
-        if [ "${KVER%%.*}" -lt 3 -o "${KVER%%.*}" -eq 3 -a "$LKVER" -lt 3 ]
+        if [ "$IF_BRIDGE_HW" ]
         then
-          ip link set dev $port address $IF_BRIDGE_HW
+          KVER="$(uname -r)"
+          LKVER="${KVER#*.}"
+          LKVER="${LKVER%%-*}"
+          LKVER="${LKVER%%.*}"
+          if [ "${KVER%%.*}" -lt 3 -o "${KVER%%.*}" -eq 3 -a "$LKVER" -lt 3 ]
+          then
+            ip link set dev $port address $IF_BRIDGE_HW
+          fi
         fi
+        if [ -e /proc/sys/net/ipv6/conf/$port ]
+        then
+          ip link set $port addrgenmode none
+        fi
+        if [ "$IF_MTU" ]
+        then
+          ip link set dev $port mtu "$IF_MTU"
+        fi
+        brctl addif $IFACE $port && ip link set dev $port up
       fi
-      if [ -f /proc/sys/net/ipv6/conf/$port/disable_ipv6 ]
-      then
-        echo 1 > /proc/sys/net/ipv6/conf/$port/disable_ipv6
-      fi
-      if [ "$IF_MTU" ]
-      then
-        ip link set dev $port mtu "$IF_MTU"
-      fi
-      brctl addif $IFACE $port && ip link set dev $port up
     # We detach each port of the bridge
-    elif [ "$MODE" = "stop" ] && [ -d /sys/class/net/$IFACE/brif/$port ];  then
+    elif [ "$MODE" = "stop" -a "$PHASE" = "post-down" ] && [ -d /sys/class/net/$IFACE/brif/$port ];  then
       ip link set dev $port down && brctl delif $IFACE $port && destroy_vlan_port
-      if [ -f /proc/sys/net/ipv6/conf/$port/disable_ipv6 ]
-      then
-        echo 0 > /proc/sys/net/ipv6/conf/$port/disable_ipv6
-      fi
     fi
   done
 done
@@ -146,6 +164,11 @@ if [ "$MODE" = "start" ] ; then
     brctl setfd $IFACE $IF_BRIDGE_FD
   fi
 
+  if [ "$IF_BRIDGE_TOKEN" ]
+  then
+    ip token set $IF_BRIDGE_TOKEN dev $IFACE
+  fi
+
 
   # We activate the bridge
   ip link set dev $IFACE up
@@ -182,16 +205,15 @@ if [ "$MODE" = "start" ] ; then
   # Wait for the bridge to be ready
   if [ "$MAXWAIT" != 0 ]
   then
-    /bin/echo -e "\nWaiting for $IFACE to get ready (MAXWAIT is $MAXWAIT seconds)."
-
     unset BREADY
     unset TRANSITIONED
     COUNT=0
+    MMAXWAIT=$MAXWAIT
 
     # Use 0.1 delay if available
-    sleep 0.1 2>/dev/null && MAXWAIT=$((MAXWAIT * 10))
+    sleep 0.1 2>/dev/null && MMAXWAIT=$((MAXWAIT * 10))
 
-    while [ -n "$BREADY" -a $COUNT -lt $MAXWAIT ]
+    while [ ! "$BREADY" -a $COUNT -lt $MMAXWAIT ]
     do
       sleep 0.1 2>/dev/null || sleep 1
       COUNT=$(($COUNT+1))
@@ -207,12 +229,15 @@ if [ "$MODE" = "start" ] ; then
           unset BREADY
         fi
       done
+      if [ ! "$BREADY" -a $COUNT = 2 ]
+      then
+        /bin/echo -e "\nWaiting for $IFACE to get ready (MAXWAIT is $MAXWAIT seconds)."
+      fi
     done
-
   fi
 
 # Finally we destroy the interface
-elif [ "$MODE" = "stop" ];  then
+elif [ "$MODE" = "stop" -a "$PHASE" = "post-down" ];  then
 
   brctl delbr $IFACE
 
