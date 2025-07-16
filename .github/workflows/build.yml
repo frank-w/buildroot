@@ -30,13 +30,13 @@ jobs:
       - name: Setup env
         run: |
           echo "DT=$(date +'%Y-%m-%d_%H%M')" >> $GITHUB_ENV
-          echo "VER=$(git describe)_arm" >> $GITHUB_ENV
+          echo "VER=$(git describe)_armhf" >> $GITHUB_ENV
           echo "BRANCH=${GITHUB_REF##*/}" >> $GITHUB_ENV
       - name: Print env
         run: |
           echo $BRANCH $VER $DT
 
-      - name: build for bpi-r2
+      - name: build for armhf (bpi-r2)
         run: |
           ./build.sh importconfig
           ./build.sh build
@@ -51,7 +51,7 @@ jobs:
           file: rootfs*.cpio.*
           tag:  "CI-BUILD-${{ env.BRANCH }}-${{ env.VER }}-${{ env.DT }}"
           overwrite: true
-          body: "release for bpi-r2"
+          body: "release for armhf"
           file_glob: true
 
   build_arm64:
@@ -74,7 +74,7 @@ jobs:
         run: |
           echo $BRANCH $VER $DT
 
-      - name: build for bpi-r3
+      - name: build for aarch64 (bpi-r64/bpi-r3/bpi-r4)
         run: |
           ./build.sh clean
           echo 'board=bpi-r3' > build.conf #change board to r3
@@ -91,5 +91,5 @@ jobs:
           file: rootfs*.cpio.*
           tag:  "CI-BUILD-${{ env.BRANCH }}-${{ env.VER }}-${{ env.DT }}"
           overwrite: true
-          body: "release for bpi-r64 + r2pro + r3"
+          body: "release for arm64 (bpi-r64/r2pro/r3/r4)"
           file_glob: true
