@@ -1,8 +1,7 @@
 #!/bin/bash
-set -e
-logfile=output.log
-
+logfile=build.log
 board=bpi-r2
+action=$1
 
 #exec > >(cat >> $logfile)
 #exec 2> >(tee -a $logfile >&2)
@@ -31,7 +30,16 @@ case $board in
 	;;
 esac
 
-case $1 in
+arch="armhf"
+grep -v "^#" configs/${DEFCONFIG} | grep -i 'BR2_aarch64'
+if [[ $? -eq 0 ]];then
+	arch="arm64"
+fi
+
+echo "Arch: $arch"
+
+set -e
+case $action in
 	"clean")
 		make clean
 	;;
@@ -49,11 +57,11 @@ case $1 in
 	;;
 	""|"build")
 		echo "building for $board..."
-		exec 3> >(tee build.log)
+		exec 3> >(tee $logfile)
 		make -s -j8 2>&3
 		ret=$?
 		exec 3>&-
-		(set -x;mv output/images/rootfs.cpio.zst rootfs_${board}.cpio.zst)
+		(set -x;mv output/images/rootfs.cpio.zst rootfs_${arch}.cpio.zst)
 	;;
 	"copy64config")
 		grep -v 'BR2_aarch64\|BR2_arm\|BR2_cortex' configs/BPI-R64_defconfig > configs/BPI-R2_defconfig
