@@ -40,16 +40,16 @@ if [ "$MODE" = "start" ] && [ ! -d /sys/class/net/$IFACE ]; then
     sleep 1
     ip link set dev $IFACE address $IF_BRIDGE_HW
   fi
-# Activate VLAN filtering on VLAN aware bridges                                
-  if [ "$IF_BRIDGE_VLAN_AWARE" = "yes" ]; then                                 
-    ip link set dev $IFACE type bridge vlan_filtering 1                        
-  else                                                                         
-    ip link set dev $IFACE type bridge vlan_filtering 0                        
-  fi                                                                           
+# Activate VLAN filtering on VLAN aware bridges
+  if [ "$IF_BRIDGE_VLAN_AWARE" = "yes" ]; then
+    ip link set dev $IFACE type bridge vlan_filtering 1
+  else
+    ip link set dev $IFACE type bridge vlan_filtering 0
+  fi
 # Wait for the ports to become available
   if [ "$IF_BRIDGE_WAITPORT" ]
   then
-    set x $IF_BRIDGE_WAITPORT &&   
+    set x $IF_BRIDGE_WAITPORT &&
     shift &&
     WAIT="$1" &&
     shift &&
